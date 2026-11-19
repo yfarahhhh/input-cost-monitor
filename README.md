@@ -1,45 +1,64 @@
 # Input Cost Monitor
 
-## The company
+A daily pipeline that tracks the cost of imported raw materials for a UK manufacturer, and splits each change into what came from the supplier's price and what came from the exchange rate.
 
-Midlands Precision Components Ltd. a fictional UK manufacturer of machined metal parts for the automotive and industrial sectors.
+Built with Python, SQL, Azure and GitHub Actions.
 
-## Who needs this
+## Background
 
-The Head of Procurement and finance managers, who need early warning of rising material costs.
+Midlands Precision Components Ltd (a fictional company) makes machined metal parts for the automotive and industrial sectors. It imports most of its raw metal and pays in foreign currencies.
 
-## The problem
+At the moment, cost increases are only discovered when supplier invoices arrive, which is too late to renegotiate, buy early or adjust customer quotes. The Head of Procurement and the finance team want an earlier warning.
 
-Cost increases are only discovered when invoices arrive
+This project answers two questions:
 
-## Questions this project answers
+1. How much has the cost of each material changed?
+2. How much of that change came from the supplier's price, and how much from the exchange rate?
 
-How much has each materials cost changed, and how much of that came from the suppliers price versus the exchange rate?
+## Scope
 
-## What we track (materials, countries, currencies)
+- **Materials:** Steel, aluminium, copper
+- **Countries:** China, Germany, USA
+- **Currencies:** USD, EUR, CNY, converted to GBP
+- **Grain:** One row per material, country and month
+- **History:** At least 3 years
+- **Refresh:** Daily
 
-Steel, aluminium and copper imports from China, Germany and the USA, in USD, EUR and CNY against GBP.
+Not included: real company data, price forecasting and automated buying decisions.
 
-## KPIs
+## Metrics
 
-Cost per kg in GBP, monthly % change, and the split between price effect and currency effect.
+- Cost per kg in GBP, by material and country
+- Month-on-month % change
+- Price effect vs currency effect
 
 ## Data sources
 
-UN Comtrade for import prices, Frankfurter for exchange rates and ONS for UK inflation.
+| Source | Used for | Updates |
+|---|---|---|
+| [UN Comtrade](https://comtradeplus.un.org/) | UK import values and weights, used to calculate price per kg | Monthly |
+| [Frankfurter](https://www.frankfurter.app/) | Exchange rates | Daily |
+| [ONS](https://www.ons.gov.uk/) | UK producer price inflation, used as a benchmark | Monthly |
 
 ## Architecture
 
-Data is pulled daily from the APIs into Bronze as raw files, cleaned into Silver tables in Azure SQL, and turned into Gold views that answer procurement's questions, all scheduled by GitHub Actions.
+```mermaid
+flowchart LR
+    A[APIs] --> B[Bronze<br/>raw JSON]
+    B --> C[Silver<br/>cleaned tables]
+    C --> D[Gold<br/>reporting views]
+    D --> E[Dashboard]
+```
 
-## Data requirements
+- **Bronze:** raw API responses saved unchanged in Azure Blob Storage, so the data can always be reprocessed.
+- **Silver:** cleaned and deduplicated tables in Azure SQL, with units converted to kg and prices to GBP.
+- **Gold:** SQL views that answer the two questions above.
+- The pipeline runs daily on a GitHub Actions schedule.
 
-Monthly data per material and country, with at least 3 years of history, refreshed daily.
+## Roadmap
 
-## Done looks like
-
-A daily automated pipeline loads clean data into Azure SQL, with tests and CI on GitHub.
-
-## Out of scope
-
-Real company data, forecasting future prices, and automatic buying decisions.
+- [x] Business brief and repo setup
+- [ ] Ingest exchange rates, Comtrade and ONS data into Bronze
+- [ ] Clean and load into Azure SQL (Silver)
+- [ ] Reporting views and dashboard (Gold)
+- [ ] Tests, CI and daily schedule
